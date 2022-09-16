@@ -15,13 +15,13 @@ func (j *job) run() {
 }
 
 type worker struct {
-	wg    *sync.WaitGroup
-	group *sync.WaitGroup
+	workerGroup *sync.WaitGroup
+	masterGroup *sync.WaitGroup
 }
 
 func (w *worker) work(x *job) {
-	w.wg.Add(1)
-	defer w.wg.Done()
+	w.workerGroup.Add(1)
+	defer w.workerGroup.Done()
 	x.run()
 }
 
@@ -30,9 +30,9 @@ func (w *worker) Dispatch(x *job) {
 }
 
 func (w *worker) cleanExit() {
-	w.group.Add(1)
-	defer w.group.Done()
-	w.wg.Wait()
+	w.masterGroup.Add(1)
+	defer w.masterGroup.Done()
+	w.workerGroup.Wait()
 }
 
 func (w *worker) Close() error {
@@ -46,8 +46,8 @@ type master struct {
 
 func (m *master) Arrange() *worker {
 	return &worker{
-		wg:    &sync.WaitGroup{},
-		group: m.wg,
+		workerGroup: &sync.WaitGroup{},
+		masterGroup: m.wg,
 	}
 }
 
